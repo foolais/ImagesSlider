@@ -1,8 +1,6 @@
 import {
-  Animated,
-  Button,
+  FlatList,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -23,34 +21,41 @@ export default function Uploader() {
   const [imagesType, setImagesType] = useState<"photos" | "videos" | null>(
     null
   );
-  const [scrollX, setScrollX] = useState<number>(0);
   const [isAutoScroll, setIsAutoScroll] = useState<boolean>(false);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
+  const scrollPosition = useRef(0);
 
   //   Automatic Scroll
   useEffect(() => {
-    const scrollToRight = () => {
-      if (scrollViewRef.current && isAutoScroll) {
-        setScrollX((prev) => {
-          const newValue = prev + 350;
-          const maxWidth = 350 * images.length;
-          if (newValue < maxWidth) {
-            scrollViewRef.current?.scrollTo({ x: newValue, animated: true });
-            return newValue;
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (isAutoScroll) {
+      intervalId = setInterval(() => {
+        if (flatListRef.current) {
+          const nextPosition = scrollPosition.current + 350;
+          const maxScroll = images.length * 350;
+
+          if (nextPosition >= maxScroll) {
+            scrollPosition.current = 0;
           } else {
-            scrollViewRef.current?.scrollTo({ x: 0, animated: true });
-            return 0;
+            scrollPosition.current = nextPosition;
           }
-        });
-      }
-    };
-    const intervalId = setInterval(scrollToRight, 2000);
+
+          flatListRef.current.scrollToOffset({
+            offset: scrollPosition.current,
+            animated: true,
+          });
+        }
+      }, 3000);
+    }
 
     return () => {
-      clearInterval(intervalId);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
-  }, [images, isAutoScroll]);
+  }, [isAutoScroll, images]);
 
   const openGallery = async (
     type: "photos" | "videos",
@@ -62,7 +67,7 @@ export default function Uploader() {
         type === "photos"
           ? ImagePicker.MediaTypeOptions.Images
           : ImagePicker.MediaTypeOptions.Videos,
-      allowsMultipleSelection: type === "photos" ? true : false,
+      allowsMultipleSelection: type === "videos" ? false : true,
       quality: 1,
     });
 
@@ -83,7 +88,15 @@ export default function Uploader() {
   const shuffleData = () => {
     const shuffled = [...images].sort(() => Math.random() - 0.5);
     setImages(shuffled);
-    setScrollX(0);
+
+    // Reset scroll position
+    if (flatListRef.current) {
+      scrollPosition.current = 0;
+      flatListRef.current.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+    }
   };
 
   const player = useVideoPlayer(images[0]?.uri, (player) => {
@@ -95,6 +108,19 @@ export default function Uploader() {
     isPlaying: player.playing,
   });
 
+  const RenderItem = ({ item }: { item: ImagesData }) => {
+    return (
+      <Image
+        source={{ uri: item.uri }}
+        style={{
+          width: 350,
+          height: 350,
+          resizeMode: "contain",
+        }}
+      />
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Show images */}
@@ -103,25 +129,18 @@ export default function Uploader() {
           <View style={{ flex: 1, maxWidth: "100%", padding: 20 }}>
             {/* PHOTOS */}
             {imagesType === "photos" && (
-              <ScrollView
+              <FlatList
+                data={images}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => <RenderItem item={item} />}
                 horizontal
-                showsVerticalScrollIndicator={false}
-                ref={scrollViewRef}
-                style={{ flexDirection: "row", gap: 10 }}
-              >
-                {images.map((image, index) => (
-                  <View key={index}>
-                    <Image
-                      source={{ uri: image.uri }}
-                      style={{
-                        width: 350,
-                        height: 350,
-                        resizeMode: "contain",
-                      }}
-                    />
-                  </View>
-                ))}
-              </ScrollView>
+                showsHorizontalScrollIndicator={false}
+                removeClippedSubviews
+                initialNumToRender={5}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                ref={flatListRef}
+              />
             )}
             {/* Videos */}
             {imagesType === "videos" && (
