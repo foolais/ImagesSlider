@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   imagesContainer: {
     maxWidth: "100%",
-    flex: 0.75,
+    flex: 1,
   },
   actionsContainer: {
     width: "100%",
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   text: { color: "#122D4F", fontSize: 20 },
   photos: {
     width: 350,
-    height: 275,
+    height: 300,
     resizeMode: "contain",
   },
   video: {
