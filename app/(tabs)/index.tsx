@@ -2,6 +2,7 @@ import { View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import Uploader from "@/components/ui/Uploader";
+import DocumentUploader from "@/components/ui/DocumentUploader";
 
 export default function HomeScreen() {
   const [hasPermission, setHasPermission] = useState(false);
@@ -22,9 +23,13 @@ export default function HomeScreen() {
         backgroundColor: "#F9F7E4",
       }}
     >
-      <View style={{ flex: 1 }}>
-        <Uploader />
-        <Uploader />
+      <View
+        style={{
+          flex: 0.5,
+        }}
+      >
+        <DocumentUploader />
+        <DocumentUploader />
       </View>
     </View>
   );
